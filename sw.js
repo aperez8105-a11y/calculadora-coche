@@ -1,6 +1,6 @@
 // Guarda la app en el móvil para que funcione sin conexión.
 // Al publicar una versión nueva, cambia el número de CACHE para que los móviles la actualicen.
-const CACHE = 'coste-coche-v1';
+const CACHE = 'coste-coche-v2';
 const ARCHIVOS = ['./', './index.html', './manifest.webmanifest', './icono-192.png', './icono-512.png', './apple-touch-icon.png'];
 
 self.addEventListener('install', e => {
