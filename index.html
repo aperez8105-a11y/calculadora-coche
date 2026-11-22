@@ -93,6 +93,12 @@
   .reset { width: 100%; margin-top: 8px; height: 38px; border-radius: 10px; border: 1px dashed var(--border);
     background: transparent; color: var(--text-2); font: inherit; font-size: 13px; cursor: pointer; }
   .reset:hover { background: var(--surface-2); }
+  .req { color: #d64545; font-weight: 700; }
+  @media (prefers-color-scheme: dark) { .req { color: #ff7a7a; } }
+  .leyenda { margin: 14px 0 0; font-size: 12.5px; color: var(--text-2); }
+  .fhint { margin: -2px 0 12px; font-size: 12.5px; line-height: 1.45; color: var(--text-2);
+    background: var(--surface-2); border-radius: 8px; padding: 8px 10px; }
+  .fhint b { color: var(--text); font-weight: 600; }
   .btns { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 8px; }
   .btns .reset { margin-top: 0; }
   .card.pend { box-shadow: none; border-style: dashed; }
@@ -269,57 +275,75 @@ const SECTIONS = [
   ]],
   ['1', 'Precio del coche', 'var(--brand-2)', [
     ['precio', 'Precio al contado', 'eur', 30000],
-    ['p_precio', 'Precio con préstamo normal', 'eur', 28226.16],
-    ['c_precio', 'Precio con cuota final', 'eur', 28226.16],
-    ['entrada', 'Entrada <small>· igual en ambos préstamos</small>', 'eur', 6053.68],
+    ['p_precio', 'Precio con préstamo normal <small>· el que te dan si financias con el concesionario</small>', 'eur', 28226.16],
+    ['c_precio', 'Precio con cuota final <small>· el que te dan con esa financiación</small>', 'eur', 28226.16],
+    ['entrada', 'Entrada', 'eur', 6053.68],
   ]],
   ['2', 'Préstamo normal <small style="text-transform:none;letter-spacing:0;font-weight:400">· del concesionario</small>', 'var(--prestamo)', [
     ['p_modo', '¿Qué datos te han dado?', 'sel', 'TIN', MODOS],
     ['p_n', 'Plazo', 'int', 36],
-    ['p_tin', 'TIN anual <small>· no la TAE</small>', 'pct', 6.99],
+    ['p_tin', 'TIN anual', 'pct', 6.99],
     ['p_com', 'Comisión de apertura', 'pct', 3.5],
     ['p_tae', 'TAE', 'pct', 9.83],
-    ['p_cuota', 'Cuota <small>· si la sabes</small>', 'eur', 684.52],
+    ['p_cuota', 'Cuota mensual', 'eur', 684.52],
   ]],
   ['B', 'Préstamo del banco', 'var(--banco)', [
-    ['b_modo', '¿Qué datos te ha dado el banco? <small>· con su dinero pagas al contado</small>', 'sel', 'TIN', MODOS],
+    ['b_modo', '¿Qué datos te ha dado el banco?', 'sel', 'TIN', MODOS],
     ['b_n', 'Plazo', 'int', 36],
     ['b_tin', 'TIN anual', 'pct', 7.5],
     ['b_com', 'Comisión de apertura', 'pct', 1],
     ['b_tae', 'TAE', 'pct', 8.5],
-    ['b_cuota', 'Cuota <small>· si la sabes</small>', 'eur', 750],
+    ['b_cuota', 'Cuota mensual', 'eur', 750],
   ]],
   ['3', 'Préstamo con cuota final', 'var(--final)', [
     ['c_modo', '¿Qué datos te han dado?', 'sel', 'TIN', MODOS],
-    ['c_n', 'Plazo inicial', 'int', 36],
+    ['c_n', 'Plazo <small>· meses de cuotas antes del pago final</small>', 'int', 36],
     ['c_tin', 'TIN anual', 'pct', 6.99],
     ['c_com', 'Comisión de apertura', 'pct', 3.5],
     ['c_tae', 'TAE', 'pct', 8.67],
-    ['c_cuota', 'Cuota <small>· si la sabes</small>', 'eur', 160],
-    ['c_final', 'Pago final adicional', 'eur', 20940.96],
+    ['c_cuota', 'Cuota mensual', 'eur', 160],
+    ['c_final', 'Pago final <small>· lo que queda por pagar al terminar las cuotas</small>', 'eur', 20940.96],
   ]],
   ['3.1', 'Cuota final · ¿refinanciar el pago final?', 'var(--final)', [
-    ['r_si', '¿Pedirás otro préstamo para pagarlo?', 'sel', 'NO', SINO],
+    ['r_si', '¿Pedirás otro préstamo para pagar el pago final?', 'sel', 'NO', SINO],
     ['r_n', 'Nuevo plazo', 'int', 36],
-    ['r_tin', 'Nuevo TIN anual <small>· supuesto</small>', 'pct', 7],
+    ['r_tin', 'Nuevo TIN anual', 'pct', 7],
     ['r_com', 'Nueva comisión', 'pct', 0],
   ]],
   ['3.2', 'Cuota final · valor del coche al vencer <small style="text-transform:none;letter-spacing:0;font-weight:400">· opcional</small>', 'var(--final)', [
-    ['v_mercado', 'Valor de mercado estimado <small>· al terminar las cuotas</small>', 'eur', 17000],
-    ['v_liquida', '¿Devolverlo liquida el saldo por contrato?', 'sel', 'SÍ', SINO],
+    ['v_mercado', 'Valor de mercado estimado <small>· lo que valdrá al terminar las cuotas</small>', 'eur', 17000],
+    ['v_liquida', 'Si lo devuelves, ¿el contrato da la deuda por pagada?', 'sel', 'SÍ', SINO],
   ]],
 ];
-// Calculadora rápida (préstamo normal): [id, etiqueta, tipo, defecto, opcional]
+// Calculadora rápida (préstamo normal): [id, etiqueta, tipo, valor del ejemplo]
 const QUICK = [
   ['q_modo', '¿Qué datos te han dado?', 'sel', 'TAE', MODOS],
   ['q_cuota', 'Cuota mensual', 'eur', 684.52],
   ['q_n', 'Número de cuotas', 'int', 36],
   ['q_tin', 'TIN anual', 'pct', 6.99],
-  ['q_com', 'Comisión <small>· vacía si no la sabes</small>', 'pct', 3.5, true],
-  ['q_tae', 'TAE <small>· déjala vacía si no te la dicen</small>', 'pct', 9.83, true],
-  ['q_entrada', 'Entrada <small>· vacía si no hay</small>', 'eur', 6053.68, true],
-  ['q_precio', 'Precio del coche <small>· opcional</small>', 'eur', 28226.16, true],
+  ['q_com', 'Comisión de apertura', 'pct', 3.5],
+  ['q_tae', 'TAE', 'pct', 9.83],
+  ['q_entrada', 'Entrada', 'eur', 6053.68],
+  ['q_precio', 'Precio del coche', 'eur', 28226.16],
 ];
+// Casillas obligatorias (se marcan con *). El resto se puede dejar vacío.
+const OBLIGATORIAS = new Set(['precio', 'p_precio', 'c_precio', 'p_n', 'p_tin', 'p_tae', 'b_n', 'b_tin', 'b_tae',
+  'c_n', 'c_tin', 'c_tae', 'c_final', 'r_n', 'r_tin', 'q_cuota', 'q_n', 'q_tin']);
+// Explicaciones que se muestran debajo de una casilla (o debajo de la pareja que empieza por ella).
+const MODO_AYUDA = 'Mira la oferta: si pone el <b>TIN</b> y la <b>comisión</b>, elige «TIN y comisión». Si solo pone la <b>TAE</b>, elige «Solo la TAE».';
+const TIN_AYUDA = 'El <b>TIN</b> es obligatorio (no es la TAE). La <b>comisión de apertura</b> es opcional: déjala vacía si no hay.';
+const TAE_AYUDA = 'La <b>TAE</b> es obligatoria. La <b>cuota mensual</b> es opcional, pero con ella el cálculo es <b>exacto</b>; sin ella es una <b>estimación</b>. ¿Solo te han dicho la cuota? Usa la pestaña «Calculadora rápida».';
+const AYUDA = {
+  entrada: 'Opcional: déjala vacía si no das entrada.',
+  p_modo: MODO_AYUDA, b_modo: MODO_AYUDA + ' Con el dinero del banco pagas el coche al contado.', c_modo: MODO_AYUDA, q_modo: MODO_AYUDA,
+  p_tin: TIN_AYUDA, b_tin: TIN_AYUDA, c_tin: TIN_AYUDA,
+  p_tae: TAE_AYUDA, b_tae: TAE_AYUDA, c_tae: TAE_AYUDA,
+  r_tin: 'Nadie sabe hoy qué interés te darán dentro de unos años: pon uno aproximado. La comisión es opcional.',
+  q_tin: 'El <b>TIN</b> es obligatorio. La <b>comisión</b> es opcional: si no te la han dicho, déjala vacía (el total podría ser mayor).',
+  q_tae: 'Opcional, pero recomendable: con la TAE se descubre si hay una comisión «escondida».',
+  q_precio: 'Opcional. Con el precio verás cuánto pagas de más por financiar.',
+  q_entrada: 'Opcional: déjala vacía si no das entrada.',
+};
 // Las casillas numéricas empiezan vacías; el valor de la lista solo se usa con «Ver un ejemplo».
 const NUMERIC = t => t === 'eur' || t === 'pct' || t === 'int';
 const FIELDS = {}, EJEMPLO = {};
@@ -363,8 +387,13 @@ function parse(str) {
   const v = parseFloat(s);
   return isFinite(v) && v >= 0 ? v : 0;
 }
+// Etiqueta con * si la casilla es obligatoria (el * va antes de la aclaración pequeña).
+const etiqueta = id => OBLIGATORIAS.has(id)
+  ? FIELDS[id].label.replace(/(\s*<small>|$)/, ' <span class="req" title="Obligatoria">*</span>$1')
+  : FIELDS[id].label;
+const ayudaHtml = id => AYUDA[id] ? `<p class="fhint" id="hint_${id}">${AYUDA[id]}</p>` : '';
 function fieldHtml(id) {
-  const f = FIELDS[id];
+  const f = { ...FIELDS[id], label: etiqueta(id) };
   if (f.type === 'multi') {
     return `<div class="field" id="row_${id}"><label>${f.label}</label><div class="multi" id="${id}">
       ${f.opts.map(([val, txt]) => `<button type="button" data-v="${val}" style="--c:${COL[val]}">${txt}</button>`).join('')}</div></div>`;
@@ -376,6 +405,7 @@ function fieldHtml(id) {
   return `<div class="field" id="row_${id}"><label for="${id}">${f.label}</label>
     <div class="ctl"><input id="${id}" type="text" inputmode="decimal" autocomplete="off" placeholder="${f.type === 'int' ? '0' : '0,00'}"><span>${UNIT[f.type]}</span></div></div>`;
 }
+const leyenda = `<p class="leyenda"><span class="req">*</span> Obligatoria. Las demás casillas puedes dejarlas vacías.</p>`;
 function buildInputs() {
   let h = '';
   SECTIONS.forEach(([num, title, color, fields]) => {
@@ -383,21 +413,22 @@ function buildInputs() {
     const ids = fields.map(f => f[0]);
     for (let k = 0; k < ids.length; k++) {
       const pair = PAIRS.find(p => p[0] === ids[k]);
-      if (pair) { h += `<div class="pair">${fieldHtml(pair[0])}${fieldHtml(pair[1])}</div>`; k++; }
-      else h += fieldHtml(ids[k]);
+      if (pair) { h += `<div class="pair" id="pair_${pair[0]}">${fieldHtml(pair[0])}${fieldHtml(pair[1])}</div>${ayudaHtml(pair[0])}`; k++; }
+      else h += fieldHtml(ids[k]) + ayudaHtml(ids[k]);
     }
     h += `</div>`;
   });
+  h = leyenda + h;
   const botones = p => `<div class="btns"><button class="reset" id="${p}ejemplo" type="button">Ver un ejemplo</button>
     <button class="reset" id="${p}borrar" type="button">Borrar datos</button></div>`;
   h += botones('');
   el('inputs').innerHTML = h;
 
-  el('qinputs').innerHTML = `<div class="group"><h2><span class="step" style="--c:var(--prestamo)">€</span>Lo que te dice el comercial</h2>
-    ${fieldHtml('q_modo')}${fieldHtml('q_cuota')}${fieldHtml('q_n')}
-    <div class="pair">${fieldHtml('q_tin')}${fieldHtml('q_com')}</div>${fieldHtml('q_tae')}</div>
-    <div class="group"><h2><span class="step" style="--c:var(--brand-2)">+</span>Para afinar el cálculo</h2>
-    ${fieldHtml('q_entrada')}${fieldHtml('q_precio')}</div>${botones('q')}`;
+  el('qinputs').innerHTML = `${leyenda}<div class="group"><h2><span class="step" style="--c:var(--prestamo)">€</span>Lo que te dice el comercial</h2>
+    ${fieldHtml('q_modo')}${ayudaHtml('q_modo')}${fieldHtml('q_cuota')}${fieldHtml('q_n')}
+    <div class="pair" id="pair_q_tin">${fieldHtml('q_tin')}${fieldHtml('q_com')}</div>${ayudaHtml('q_tin')}${fieldHtml('q_tae')}${ayudaHtml('q_tae')}</div>
+    <div class="group"><h2><span class="step" style="--c:var(--brand-2)">+</span>Para afinar el cálculo <small style="text-transform:none;letter-spacing:0;font-weight:400">· opcional</small></h2>
+    ${fieldHtml('q_entrada')}${fieldHtml('q_precio')}${ayudaHtml('q_precio')}</div>${botones('q')}`;
   // «Ver un ejemplo» carga los datos de ejemplo; «Borrar datos» deja todo vacío.
   ['', 'q'].forEach(p => {
     el(p + 'ejemplo').addEventListener('click', () => { load(EJEMPLO); render(); });
@@ -542,17 +573,19 @@ function render() {
     el(id).querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.v === v[id]))));
   const F = new Set(v.formas);
   el('formas').querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', String(F.has(b.dataset.v))));
-  ['r_n', 'r_tin', 'r_com'].forEach(id => el('row_' + id).classList.toggle('off', !refi));
+  ['row_r_n', 'row_r_tin', 'row_r_com', 'hint_r_tin'].forEach(id => el(id).classList.toggle('off', !refi));
 
   // Mostrar solo los datos de las formas de pago elegidas
   const hide = (id, h) => el(id).classList.toggle('hide', h);
   const nPrest = ['prestamo', 'final', 'banco'].filter(k => F.has(k)).length;
   hide('row_precio', !F.has('contado') && !F.has('banco'));   // el banco paga el precio al contado
-  el('row_precio').querySelector('label').innerHTML = F.has('banco') ? 'Precio al contado <small>· también con préstamo del banco</small>' : 'Precio al contado';
+  el('row_precio').querySelector('label').innerHTML = 'Precio al contado <span class="req" title="Obligatoria">*</span>'
+    + (F.has('banco') ? ' <small>· también se usa para el préstamo del banco</small>' : '');
   hide('row_p_precio', !F.has('prestamo'));
   hide('row_c_precio', !F.has('final'));
   hide('row_entrada', nPrest === 0);
-  el('row_entrada').querySelector('label').innerHTML = nPrest > 1 ? 'Entrada <small>· igual en todos los préstamos</small>' : 'Entrada';
+  el('row_entrada').querySelector('label').innerHTML = nPrest > 1 ? 'Entrada <small>· la misma en todos los préstamos</small>' : 'Entrada';
+  hide('hint_entrada', nPrest === 0);
   hide('grp_2', !F.has('prestamo'));
   hide('grp_B', !F.has('banco'));
   ['grp_3', 'grp_3.1', 'grp_3.2'].forEach(g => hide(g, !F.has('final')));
@@ -561,8 +594,8 @@ function render() {
 
   ['p', 'c', 'b'].forEach(pre => {
     const tae = v[pre + '_modo'] === 'TAE';
-    ['_tin', '_com'].forEach(s => el('row_' + pre + s).classList.toggle('hide', tae));
-    ['_tae', '_cuota'].forEach(s => el('row_' + pre + s).classList.toggle('hide', !tae));
+    [`pair_${pre}_tin`, `hint_${pre}_tin`].forEach(id => el(id).classList.toggle('hide', tae));
+    [`pair_${pre}_tae`, `hint_${pre}_tae`].forEach(id => el(id).classList.toggle('hide', !tae));
   });
 
   // ¿Qué formas de pago tienen ya los datos mínimos? Solo esas se calculan y comparan.
@@ -627,7 +660,10 @@ function render() {
   const pendiente = o => `<div class="panel card pend" style="--c:${COL[o.key]}">
       <div class="top"><span class="ico">${ICON[o.key]}</span><h3>${o.nombre}</h3></div>
       <div class="lbl">Faltan datos</div>
-      <div class="sub" style="margin-top:6px">Escribe a la izquierda: <b>${faltan(o.key).join(', ')}</b>.</div></div>`;
+      <div class="sub" style="margin-top:6px">Escribe a la izquierda: <b>${faltan(o.key).join(', ')}</b>.</div>${soloCuota(o)
+        ? `<div class="desc" style="margin-top:10px">Solo con la cuota no se puede comparar este préstamo: pide la <b>TAE</b>. Mientras, puedes ver cuánto pagarás al final en la pestaña <b>«Calculadora rápida»</b>.</div>` : ''}</div>`;
+  // Modo «Solo la TAE» con la cuota escrita pero sin la TAE.
+  const soloCuota = o => { const p = PREF[o.key]; return p && esTAE(p) && !has(p + '_tae') && has(p + '_cuota'); };
   const card = (o, rows, desc) => !F.has(o.key) ? '' : !R.has(o.key) ? pendiente(o) : `<div class="panel card${isBest(o) ? ' best' : ''}" style="--c:${COL[o.key]}">
       <div class="top"><span class="ico">${ICON[o.key]}</span><h3>${o.nombre}</h3>${isBest(o) ? '<span class="badge">Más barata</span>' : ''}</div>
       <div class="lbl">Total para quedarte el coche</div>
@@ -738,9 +774,8 @@ function renderQuick() {
   const v = values;
   const c = v.q_cuota || 0, n = Math.max(1, Math.round(v.q_n || 0)), ent = v.q_entrada || 0;
   const modoTIN = v.q_modo === 'TIN';
-  el('row_q_tin').classList.toggle('hide', !modoTIN);
-  el('row_q_com').classList.toggle('hide', !modoTIN);
-  el('row_q_tae').classList.toggle('hide', modoTIN);
+  ['pair_q_tin', 'hint_q_tin'].forEach(id => el(id).classList.toggle('hide', !modoTIN));
+  ['row_q_tae', 'hint_q_tae'].forEach(id => el(id).classList.toggle('hide', modoTIN));
 
   // Sin los datos mínimos, en vez de ceros se explica qué escribir.
   const faltanQ = ['q_cuota', 'q_n', ...(modoTIN ? ['q_tin'] : [])].filter(id => v[id] == null)
