@@ -1,0 +1,953 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>¿Cuánto te cuesta pagar el coche? · Calculadora de financiación</title>
+<!-- Instalable en el móvil (app sin conexión) -->
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#0f1e3d">
+<link rel="icon" type="image/png" sizes="192x192" href="icono-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Coste coche">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<style>
+  :root {
+    --bg: #f3f5f9; --surface: #ffffff; --surface-2: #f7f8fb; --border: #e5e8ee;
+    --text: #0f172a; --text-2: #475569; --muted: #8a94a6;
+    --brand: #0f1e3d; --brand-2: #1b3266;
+    --contado: #0e9f6e; --prestamo: #2f6fe4; --final: #e08a12; --banco: #7c4ddb;
+    --precio: #1e2b4d; --interes: #e08a12; --comision: #f3c879;
+    --focus: #2f6fe4;
+    --shadow: 0 1px 2px rgba(15, 23, 42, .04), 0 6px 24px rgba(15, 23, 42, .06);
+    --radius: 16px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0b1120; --surface: #121a2c; --surface-2: #19223a; --border: #26304a;
+      --text: #e8edf6; --text-2: #b4bfd3; --muted: #7c879d;
+      --contado: #34c795; --prestamo: #6c9bff; --final: #f2a53c; --banco: #a98bff;
+      --precio: #8ea2d4; --interes: #f2a53c; --comision: #f7d79c; --focus: #6c9bff;
+      --shadow: 0 1px 2px rgba(0,0,0,.3), 0 8px 28px rgba(0,0,0,.25);
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text);
+    font: 15px/1.5 "Segoe UI Variable Text", "Segoe UI", Inter, system-ui, -apple-system, Roboto, sans-serif;
+    -webkit-font-smoothing: antialiased; }
+  .num { font-variant-numeric: tabular-nums; }
+
+  /* Cabecera */
+  .hero { background: linear-gradient(135deg, var(--brand) 0%, var(--brand-2) 100%); color: #fff; padding: 34px 24px 96px; }
+  .hero-in { max-width: 1240px; margin: 0 auto; display: flex; align-items: center; gap: 18px; }
+  .logo { width: 52px; height: 52px; border-radius: 14px; background: rgba(255,255,255,.12); display: grid; place-items: center; flex: none; }
+  .hero h1 { margin: 0; font-size: 30px; font-weight: 700; letter-spacing: -.4px; }
+  .hero p { margin: 4px 0 0; color: #c3cde3; }
+  .wrap { max-width: 1240px; margin: -64px auto 0; padding: 0 24px 56px; }
+  .grid { display: grid; grid-template-columns: 370px 1fr; gap: 24px; align-items: start; }
+  .grid > * { min-width: 0; }   /* que ningún contenido ensanche la columna */
+  @media (max-width: 1000px) { .grid { grid-template-columns: minmax(0, 1fr); } .hero { padding-bottom: 84px; } }
+  @media (max-width: 600px) {
+    .wrap { padding: 0 12px 40px; } .hero { padding: 24px 14px 84px; } .hero h1 { font-size: 24px; }
+    aside.panel { padding: 4px 14px 14px; } .tabs button { padding: 8px 12px; font-size: 14px; }
+    .card .total { font-size: 30px; } .q-total .v { font-size: 36px; }
+  }
+
+  .panel { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); }
+
+  /* Datos */
+  aside.panel { padding: 6px 20px 18px; position: sticky; top: 16px; }
+  @media (max-width: 1000px) { aside.panel { position: static; } }
+  .group { padding: 16px 0 6px; border-bottom: 1px solid var(--border); }
+  .group:last-of-type { border-bottom: 0; }
+  /* Subbloques de la cuota final (3.1, 3.2): sangrados y unidos al bloque 3 */
+  .group:has(+ .group.sub) { border-bottom: 0; padding-bottom: 0; }
+  .group.sub { margin: 6px 0 0 8px; padding: 12px 0 4px 14px; border-bottom: 0;
+    border-left: 3px solid color-mix(in srgb, var(--final) 45%, transparent); }
+  .group.sub + .group:not(.sub) { border-top: 1px solid var(--border); margin-top: 12px; }
+  .group.sub h2 { font-size: 11.5px; }
+  .group h2 { margin: 0 0 12px; font-size: 12px; font-weight: 700; color: var(--text-2); text-transform: uppercase;
+    letter-spacing: .8px; display: flex; align-items: center; gap: 10px; }
+  .step { min-width: 22px; padding: 0 5px; height: 22px; border-radius: 7px; display: grid; place-items: center; font-size: 11px;
+    background: var(--c, var(--brand)); color: #fff; letter-spacing: 0; }
+  @media (prefers-color-scheme: dark) { .step { color: #0b1120; } }
+  .field { margin-bottom: 10px; }
+  .field label { display: block; font-size: 13px; color: var(--text-2); margin-bottom: 4px; }
+  .field label small { color: var(--muted); }
+  .ctl { display: flex; align-items: center; height: 40px; border: 1px solid var(--border); border-radius: 10px;
+    background: var(--surface-2); transition: border-color .15s, box-shadow .15s, background .15s; }
+  .ctl:focus-within { border-color: var(--focus); box-shadow: 0 0 0 3px color-mix(in srgb, var(--focus) 20%, transparent); background: var(--surface); }
+  .ctl input { flex: 1; min-width: 0; height: 100%; border: 0; background: transparent; color: var(--text);
+    font: inherit; font-weight: 600; font-variant-numeric: tabular-nums; text-align: right; padding: 0 6px 0 12px; outline: none; }
+  .ctl span { color: var(--muted); font-size: 13px; padding-right: 12px; min-width: 22px; }
+  .pair { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 10px; }
+  .pair label { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .seg { display: grid; grid-template-columns: 1fr 1fr; background: var(--surface-2); border: 1px solid var(--border);
+    border-radius: 10px; padding: 3px; height: 40px; }
+  .seg button { border: 0; border-radius: 8px; background: transparent; color: var(--text-2); font: inherit; font-weight: 600; cursor: pointer; }
+  .seg button[aria-pressed="true"] { background: var(--surface); color: var(--text); box-shadow: 0 1px 3px rgba(15,23,42,.15); }
+  .off { opacity: .45; pointer-events: none; }
+  .hide { display: none; }
+  .reset { width: 100%; margin-top: 8px; height: 38px; border-radius: 10px; border: 1px dashed var(--border);
+    background: transparent; color: var(--text-2); font: inherit; font-size: 13px; cursor: pointer; }
+  .reset:hover { background: var(--surface-2); }
+  .btns { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 8px; }
+  .btns .reset { margin-top: 0; }
+  .card.pend { box-shadow: none; border-style: dashed; }
+  .card.pend::before { opacity: .35; }
+  .card.pend .sub b { color: var(--text); font-weight: 600; }
+  input::placeholder { color: var(--muted); opacity: .55; font-weight: 400; }
+
+  /* Veredicto */
+  .verdict { padding: 22px 24px; display: flex; gap: 20px; align-items: center; flex-wrap: wrap; border-left: 6px solid var(--c); }
+  .verdict .k { font-size: 12px; text-transform: uppercase; letter-spacing: .8px; color: var(--muted); font-weight: 700; }
+  .verdict .v { font-size: 26px; font-weight: 700; letter-spacing: -.3px; color: var(--c); }
+  .verdict .chips { display: flex; gap: 8px; flex-wrap: wrap; margin-left: auto; }
+  .chip { background: var(--surface-2); border: 1px solid var(--border); border-radius: 99px; padding: 6px 12px; font-size: 13px; color: var(--text-2); }
+  .chip b { color: var(--text); }
+
+  /* Opciones */
+  .cards { display: grid; grid-template-columns: repeat(var(--n, 3), minmax(0, 1fr)); gap: 18px; margin-top: 18px; }
+  .multi { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
+  .multi button { border: 1px solid var(--border); border-radius: 10px; background: var(--surface-2); color: var(--muted);
+    font: inherit; font-size: 13px; font-weight: 600; padding: 8px 4px; cursor: pointer; line-height: 1.25; transition: all .15s; }
+  .multi button::before { content: "○"; display: block; font-size: 14px; margin-bottom: 2px; }
+  .multi button[aria-pressed="true"] { border-color: var(--c); color: var(--text);
+    background: color-mix(in srgb, var(--c) 12%, var(--surface)); }
+  .multi button[aria-pressed="true"]::before { content: "✓"; color: var(--c); font-weight: 700; }
+  @media (max-width: 820px) { .cards { grid-template-columns: 1fr; } }
+  .card { padding: 20px; position: relative; overflow: hidden; display: flex; flex-direction: column; }
+  .card::before { content: ""; position: absolute; inset: 0 0 auto 0; height: 4px; background: var(--c); }
+  .card.best { box-shadow: 0 0 0 2px var(--c), var(--shadow); border-color: transparent; }
+  .card .top { display: flex; align-items: center; gap: 10px; }
+  .ico { width: 34px; height: 34px; border-radius: 10px; display: grid; place-items: center;
+    background: color-mix(in srgb, var(--c) 14%, transparent); color: var(--c); flex: none; }
+  .card h3 { margin: 0; font-size: 15px; font-weight: 700; }
+  .badge { margin-left: auto; font-size: 11px; font-weight: 700; padding: 3px 9px; border-radius: 99px;
+    background: color-mix(in srgb, var(--c) 15%, transparent); color: var(--c); white-space: nowrap; }
+  .card .lbl { margin-top: 18px; font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: .6px; font-weight: 600; }
+  .card .total { font-size: 34px; font-weight: 700; letter-spacing: -.8px; line-height: 1.15; }
+  .card .sub { color: var(--text-2); font-size: 13px; }
+  .meter { height: 6px; border-radius: 99px; background: var(--surface-2); margin: 14px 0 6px; overflow: hidden; }
+  .meter i { display: block; height: 100%; background: var(--c); border-radius: 99px; transition: width .3s; }
+  .card dl { margin: 10px 0 0; display: grid; grid-template-columns: 1fr auto; row-gap: 9px; column-gap: 10px; font-size: 14px; }
+  .card dt { color: var(--text-2); white-space: nowrap; } .card dd { margin: 0; text-align: right; font-weight: 600; font-variant-numeric: tabular-nums; }
+  .card dd.hi { color: var(--c); font-size: 16px; }
+  .card .desc { margin-top: 14px; padding: 10px 12px; border-radius: 10px; background: var(--surface-2); font-size: 13px; color: var(--text-2); }
+  .card .spacer { flex: 1; }
+
+  /* Notas */
+  .notes { margin-top: 18px; padding: 6px 20px; }
+  .note { display: flex; gap: 12px; align-items: flex-start; padding: 12px 0; border-bottom: 1px solid var(--border); color: var(--text-2); }
+  .note:last-child { border-bottom: 0; }
+  .note svg { flex: none; margin-top: 2px; color: var(--c, var(--muted)); }
+  .note b { color: var(--text); }
+
+  /* Gráfico y tablas */
+  .section { margin-top: 18px; padding: 20px 22px; }
+  .section h2 { margin: 0 0 4px; font-size: 16px; font-weight: 700; }
+  .section .hint { margin: 0 0 12px; color: var(--muted); font-size: 13px; }
+  svg.chart { width: 100%; height: auto; display: block; }
+  svg.chart text { fill: var(--muted); font-size: 12px; font-family: inherit; }
+  svg.chart .tot { fill: var(--text); font-weight: 700; font-size: 13px; }
+  svg.chart .name { fill: var(--text-2); font-size: 13px; }
+  .legend { display: flex; justify-content: center; gap: 20px; font-size: 13px; color: var(--text-2); flex-wrap: wrap; margin-top: 4px; }
+  .legend i { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 6px; vertical-align: -1px; }
+  details { border: 1px solid var(--border); border-radius: 12px; margin-top: 10px; overflow: hidden; }
+  summary { cursor: pointer; padding: 12px 14px; font-weight: 600; display: flex; align-items: center; gap: 10px; list-style: none; }
+  summary::-webkit-details-marker { display: none; }
+  summary::after { content: "▾"; margin-left: auto; color: var(--muted); transition: transform .2s; }
+  details[open] summary::after { transform: rotate(180deg); }
+  summary .dot { width: 9px; height: 9px; border-radius: 50%; background: var(--c); }
+  summary .s2 { color: var(--muted); font-weight: 400; font-size: 13px; }
+  .tw { max-height: 340px; overflow: auto; border-top: 1px solid var(--border); }
+  table { border-collapse: collapse; width: 100%; font-size: 13px; font-variant-numeric: tabular-nums; }
+  th, td { padding: 7px 14px; text-align: right; border-bottom: 1px solid var(--border); }
+  th { position: sticky; top: 0; background: var(--surface-2); color: var(--text-2); font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: .5px; }
+  td:first-child, th:first-child { text-align: left; }
+  table.dg td small { color: var(--muted); }
+  table.dg td:not(:first-child) { white-space: nowrap; }
+  table.dg tr.sum td { font-weight: 600; background: var(--surface-2); }
+  table.dg tr.tot td { font-weight: 700; font-size: 14px; background: var(--surface-2); border-bottom: 2px solid var(--border); }
+  table.dg tr.gap td { border-top: 10px solid var(--surface); }
+  tr.hl td { background: color-mix(in srgb, var(--final) 12%, transparent); font-weight: 700; }
+  .foot { color: var(--muted); font-size: 12.5px; margin: 20px 4px 0; }
+
+  /* Pestañas */
+  .tabs { max-width: 1240px; margin: 22px auto 0; display: flex; gap: 6px; }
+  .tabs button { border: 0; border-radius: 10px; padding: 9px 16px; font: inherit; font-weight: 600; cursor: pointer;
+    background: rgba(255,255,255,.08); color: #c3cde3; }
+  .tabs button:hover { background: rgba(255,255,255,.16); color: #fff; }
+  .tabs button[aria-selected="true"] { background: #fff; color: var(--brand); }
+  [hidden] { display: none !important; }
+
+  /* Calculadora rápida */
+  .q-total { padding: 24px; border-left: 6px solid var(--prestamo); }
+  .q-total .k { font-size: 12px; text-transform: uppercase; letter-spacing: .8px; color: var(--muted); font-weight: 700; }
+  .q-total .v { font-size: 44px; font-weight: 700; letter-spacing: -1px; line-height: 1.1; margin: 4px 0; color: var(--prestamo); }
+  .q-total .s { color: var(--text-2); }
+  .stack { display: flex; height: 14px; border-radius: 99px; overflow: hidden; margin: 18px 0 8px; background: var(--surface-2); }
+  .stack i { display: block; height: 100%; }
+  .q-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-top: 18px; }
+  @media (max-width: 820px) { .q-grid { grid-template-columns: 1fr; } }
+  .q-box { padding: 20px; }
+  .q-box h3 { margin: 0 0 12px; font-size: 15px; }
+  .q-box dl { margin: 0; display: grid; grid-template-columns: 1fr auto; row-gap: 10px; column-gap: 10px; }
+  .q-box dt { color: var(--text-2); } .q-box dd { margin: 0; text-align: right; font-weight: 600; font-variant-numeric: tabular-nums; }
+  .q-box dt.t, .q-box dd.t { border-top: 1px solid var(--border); padding-top: 10px; font-weight: 700; color: var(--text); font-size: 16px; }
+  .q-box .big { font-size: 30px; font-weight: 700; letter-spacing: -.5px; color: var(--final); }
+  .q-box .bs { color: var(--text-2); margin-bottom: 14px; font-size: 14px; }
+  .unk { color: var(--muted); font-weight: 400; font-style: italic; }
+  .go { margin-top: 12px; width: 100%; height: 40px; border: 0; border-radius: 10px; background: var(--prestamo); color: #fff;
+    font: inherit; font-weight: 600; cursor: pointer; }
+  .go:hover { filter: brightness(1.08); }
+  @media (prefers-color-scheme: dark) { .go { color: #0b1120; } }
+</style>
+</head>
+<body>
+<header class="hero">
+  <div class="hero-in">
+    <div class="logo" aria-hidden="true">
+      <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M5 17h-.5A1.5 1.5 0 0 1 3 15.5V12l2-5.2A2 2 0 0 1 6.9 5.5h10.2a2 2 0 0 1 1.9 1.3L21 12v3.5a1.5 1.5 0 0 1-1.5 1.5H19"/>
+        <path d="M3 12h18"/><circle cx="7" cy="17" r="2"/><circle cx="17" cy="17" r="2"/><path d="M9 17h6"/>
+      </svg>
+    </div>
+    <div>
+      <h1>¿Cuánto te cuesta pagar el coche?</h1>
+      <p>Compara las formas de pago: al contado, préstamo del concesionario, préstamo del banco o cuota final. Los resultados se actualizan al momento.</p>
+    </div>
+  </div>
+  <nav class="tabs" role="tablist">
+    <button type="button" role="tab" data-tab="comparar">Comparar formas de pago</button>
+    <button type="button" role="tab" data-tab="rapida">Calculadora rápida · lo que dice el comercial</button>
+  </nav>
+</header>
+
+<div class="wrap">
+  <div class="grid" id="view-rapida" hidden>
+    <aside class="panel" id="qinputs"></aside>
+    <main id="qresult"></main>
+  </div>
+  <div class="grid" id="view-comparar">
+    <aside class="panel" id="inputs"></aside>
+    <main>
+      <div class="panel verdict" id="verdict"></div>
+      <div class="cards" id="cards"></div>
+      <div class="panel notes" id="notes"></div>
+      <div class="panel section" id="sec-chart">
+        <h2>Desembolso total para quedarte el coche</h2>
+        <p class="hint">Cuánto pagas en total con cada opción y en qué se va ese dinero.</p>
+        <div id="chart"></div>
+      </div>
+      <div class="panel section" id="sec-desglose">
+        <h2>Desglose · sigue el dinero</h2>
+        <p class="hint">De dónde sale el desembolso total de cada opción.</p>
+        <div id="desglose"></div>
+      </div>
+      <div class="panel section" id="sec-tables">
+        <h2>Cuadros de amortización</h2>
+        <p class="hint">Mes a mes: cuánto de cada cuota son intereses y cuánto deuda que amortizas.</p>
+        <div id="tables"></div>
+      </div>
+      <p class="foot">Cálculo orientativo con sistema francés (cuota mensual constante). La comisión de apertura se paga al firmar, junto con la entrada.
+        La TAE incluye intereses y comisión de apertura, pero no seguros ni otros gastos. Revisa siempre la oferta vinculante del concesionario o del banco antes de firmar.</p>
+    </main>
+  </div>
+</div>
+
+<script>
+// [id, etiqueta, tipo, valor por defecto, opciones]   tipos: eur, pct, int, sel
+const SINO = [['NO', 'No'], ['SÍ', 'Sí']];
+const MODOS = [['TIN', 'TIN y comisión'], ['TAE', 'Solo la TAE']];
+const FORMAS = [['contado', 'Al contado'], ['prestamo', 'Préstamo normal'], ['banco', 'Préstamo del banco'], ['final', 'Cuota final']];
+const SECTIONS = [
+  ['✓', 'Formas de pago que quieres comparar', 'var(--contado)', [
+    ['formas', 'Marca solo las que tienes disponibles', 'multi', ['contado', 'prestamo', 'banco', 'final'], FORMAS],
+  ]],
+  ['1', 'Precio del coche', 'var(--brand-2)', [
+    ['precio', 'Precio al contado', 'eur', 30000],
+    ['p_precio', 'Precio con préstamo normal', 'eur', 28226.16],
+    ['c_precio', 'Precio con cuota final', 'eur', 28226.16],
+    ['entrada', 'Entrada <small>· igual en ambos préstamos</small>', 'eur', 6053.68],
+  ]],
+  ['2', 'Préstamo normal <small style="text-transform:none;letter-spacing:0;font-weight:400">· del concesionario</small>', 'var(--prestamo)', [
+    ['p_modo', '¿Qué datos te han dado?', 'sel', 'TIN', MODOS],
+    ['p_n', 'Plazo', 'int', 36],
+    ['p_tin', 'TIN anual <small>· no la TAE</small>', 'pct', 6.99],
+    ['p_com', 'Comisión de apertura', 'pct', 3.5],
+    ['p_tae', 'TAE', 'pct', 9.83],
+    ['p_cuota', 'Cuota <small>· si la sabes</small>', 'eur', 684.52],
+  ]],
+  ['B', 'Préstamo del banco', 'var(--banco)', [
+    ['b_modo', '¿Qué datos te ha dado el banco? <small>· con su dinero pagas al contado</small>', 'sel', 'TIN', MODOS],
+    ['b_n', 'Plazo', 'int', 36],
+    ['b_tin', 'TIN anual', 'pct', 7.5],
+    ['b_com', 'Comisión de apertura', 'pct', 1],
+    ['b_tae', 'TAE', 'pct', 8.5],
+    ['b_cuota', 'Cuota <small>· si la sabes</small>', 'eur', 750],
+  ]],
+  ['3', 'Préstamo con cuota final', 'var(--final)', [
+    ['c_modo', '¿Qué datos te han dado?', 'sel', 'TIN', MODOS],
+    ['c_n', 'Plazo inicial', 'int', 36],
+    ['c_tin', 'TIN anual', 'pct', 6.99],
+    ['c_com', 'Comisión de apertura', 'pct', 3.5],
+    ['c_tae', 'TAE', 'pct', 8.67],
+    ['c_cuota', 'Cuota <small>· si la sabes</small>', 'eur', 160],
+    ['c_final', 'Pago final adicional', 'eur', 20940.96],
+  ]],
+  ['3.1', 'Cuota final · ¿refinanciar el pago final?', 'var(--final)', [
+    ['r_si', '¿Pedirás otro préstamo para pagarlo?', 'sel', 'NO', SINO],
+    ['r_n', 'Nuevo plazo', 'int', 36],
+    ['r_tin', 'Nuevo TIN anual <small>· supuesto</small>', 'pct', 7],
+    ['r_com', 'Nueva comisión', 'pct', 0],
+  ]],
+  ['3.2', 'Cuota final · valor del coche al vencer <small style="text-transform:none;letter-spacing:0;font-weight:400">· opcional</small>', 'var(--final)', [
+    ['v_mercado', 'Valor de mercado estimado <small>· al terminar las cuotas</small>', 'eur', 17000],
+    ['v_liquida', '¿Devolverlo liquida el saldo por contrato?', 'sel', 'SÍ', SINO],
+  ]],
+];
+// Calculadora rápida (préstamo normal): [id, etiqueta, tipo, defecto, opcional]
+const QUICK = [
+  ['q_modo', '¿Qué datos te han dado?', 'sel', 'TAE', MODOS],
+  ['q_cuota', 'Cuota mensual', 'eur', 684.52],
+  ['q_n', 'Número de cuotas', 'int', 36],
+  ['q_tin', 'TIN anual', 'pct', 6.99],
+  ['q_com', 'Comisión <small>· vacía si no la sabes</small>', 'pct', 3.5, true],
+  ['q_tae', 'TAE <small>· déjala vacía si no te la dicen</small>', 'pct', 9.83, true],
+  ['q_entrada', 'Entrada <small>· vacía si no hay</small>', 'eur', 6053.68, true],
+  ['q_precio', 'Precio del coche <small>· opcional</small>', 'eur', 28226.16, true],
+];
+// Las casillas numéricas empiezan vacías; el valor de la lista solo se usa con «Ver un ejemplo».
+const NUMERIC = t => t === 'eur' || t === 'pct' || t === 'int';
+const FIELDS = {}, EJEMPLO = {};
+[...SECTIONS.flatMap(s => s[3]), ...QUICK].forEach(f => {
+  FIELDS[f[0]] = { label: f[1], type: f[2], def: NUMERIC(f[2]) ? null : f[3], opts: Array.isArray(f[4]) ? f[4] : undefined };
+  EJEMPLO[f[0]] = f[3];
+});
+const STORE = 'calc-coche-v2';
+const UNIT = { eur: '€', pct: '%', int: 'meses' };
+const PAIRS = [['p_tin', 'p_com'], ['c_tin', 'c_com'], ['r_tin', 'r_com'], ['p_tae', 'p_cuota'], ['c_tae', 'c_cuota'], ['b_tin', 'b_com'], ['b_tae', 'b_cuota']];
+
+const COL = { contado: 'var(--contado)', prestamo: 'var(--prestamo)', final: 'var(--final)', banco: 'var(--banco)' };
+const PREF = { prestamo: 'p', final: 'c', banco: 'b' };   // prefijo de los campos de cada préstamo
+const ICON = {
+  banco: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9.5 12 4l9 5.5"/><path d="M4 10h16M6 10v8M10 10v8M14 10v8M18 10v8M3 20h18"/></svg>',
+  contado: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="2.5"/><path d="M6 10v4M18 10v4"/></svg>',
+  prestamo: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 2v4M16 2v4M8 13h2M14 13h2M8 17h2M14 17h2"/></svg>',
+  final: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V10M9 20v-6M14 20v-4M19 20V4"/></svg>',
+  info: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg>',
+  check: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="m8 12 3 3 5-6"/></svg>',
+};
+const el = id => document.getElementById(id);
+const n2 = new Intl.NumberFormat('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2, useGrouping: 'always' });
+const n0 = new Intl.NumberFormat('es-ES', { maximumFractionDigits: 0, useGrouping: 'always' });
+const eur2 = v => n2.format(v) + ' €';
+const eur0 = v => n0.format(v) + ' €';
+const pct = v => n2.format(v) + ' %';
+const signed = v => (v >= 0 ? '+' : '−') + eur2(Math.abs(v));
+
+// ---------- Casillas ----------
+const values = {};
+function fmt(id, v) {
+  if (v == null) return '';
+  const t = FIELDS[id].type;
+  return t === 'int' ? String(Math.round(v)) : n2.format(v);
+}
+function parse(str) {
+  let s = String(str).replace(/[€%\s]/g, '');
+  if (s.includes(',')) s = s.replace(/\./g, '').replace(',', '.');
+  else if (/^\d{1,3}(\.\d{3})+$/.test(s)) s = s.replace(/\./g, '');   // 30.000 → miles
+  const v = parseFloat(s);
+  return isFinite(v) && v >= 0 ? v : 0;
+}
+function fieldHtml(id) {
+  const f = FIELDS[id];
+  if (f.type === 'multi') {
+    return `<div class="field" id="row_${id}"><label>${f.label}</label><div class="multi" id="${id}">
+      ${f.opts.map(([val, txt]) => `<button type="button" data-v="${val}" style="--c:${COL[val]}">${txt}</button>`).join('')}</div></div>`;
+  }
+  if (f.type === 'sel') {
+    return `<div class="field" id="row_${id}"><label>${f.label}</label><div class="seg" id="${id}">
+      ${f.opts.map(([val, txt]) => `<button type="button" data-v="${val}">${txt}</button>`).join('')}</div></div>`;
+  }
+  return `<div class="field" id="row_${id}"><label for="${id}">${f.label}</label>
+    <div class="ctl"><input id="${id}" type="text" inputmode="decimal" autocomplete="off" placeholder="${f.type === 'int' ? '0' : '0,00'}"><span>${UNIT[f.type]}</span></div></div>`;
+}
+function buildInputs() {
+  let h = '';
+  SECTIONS.forEach(([num, title, color, fields]) => {
+    h += `<div class="group${num.includes('.') ? ' sub' : ''}" id="grp_${num}"><h2><span class="step" style="--c:${color}">${num}</span>${title}</h2>`;
+    const ids = fields.map(f => f[0]);
+    for (let k = 0; k < ids.length; k++) {
+      const pair = PAIRS.find(p => p[0] === ids[k]);
+      if (pair) { h += `<div class="pair">${fieldHtml(pair[0])}${fieldHtml(pair[1])}</div>`; k++; }
+      else h += fieldHtml(ids[k]);
+    }
+    h += `</div>`;
+  });
+  const botones = p => `<div class="btns"><button class="reset" id="${p}ejemplo" type="button">Ver un ejemplo</button>
+    <button class="reset" id="${p}borrar" type="button">Borrar datos</button></div>`;
+  h += botones('');
+  el('inputs').innerHTML = h;
+
+  el('qinputs').innerHTML = `<div class="group"><h2><span class="step" style="--c:var(--prestamo)">€</span>Lo que te dice el comercial</h2>
+    ${fieldHtml('q_modo')}${fieldHtml('q_cuota')}${fieldHtml('q_n')}
+    <div class="pair">${fieldHtml('q_tin')}${fieldHtml('q_com')}</div>${fieldHtml('q_tae')}</div>
+    <div class="group"><h2><span class="step" style="--c:var(--brand-2)">+</span>Para afinar el cálculo</h2>
+    ${fieldHtml('q_entrada')}${fieldHtml('q_precio')}</div>${botones('q')}`;
+  // «Ver un ejemplo» carga los datos de ejemplo; «Borrar datos» deja todo vacío.
+  ['', 'q'].forEach(p => {
+    el(p + 'ejemplo').addEventListener('click', () => { load(EJEMPLO); render(); });
+    el(p + 'borrar').addEventListener('click', () => { load({}); render(); });
+  });
+
+  Object.keys(FIELDS).forEach(id => {
+    const e = el(id);
+    if (FIELDS[id].type === 'multi') {
+      e.querySelectorAll('button').forEach(b => b.addEventListener('click', () => {
+        const cur = new Set(values[id]);
+        if (cur.has(b.dataset.v)) { if (cur.size === 1) return; cur.delete(b.dataset.v); }   // al menos una
+        else cur.add(b.dataset.v);
+        values[id] = FIELDS[id].opts.map(o => o[0]).filter(k => cur.has(k));
+        render();
+      }));
+      return;
+    }
+    if (FIELDS[id].type === 'sel') {
+      e.querySelectorAll('button').forEach(b => b.addEventListener('click', () => { values[id] = b.dataset.v; render(); }));
+      return;
+    }
+    e.addEventListener('focus', () => { e.value = values[id] == null ? '' : String(values[id]).replace('.', ','); e.select(); });
+    e.addEventListener('input', () => {
+      values[id] = e.value.trim() === '' ? null : parse(e.value);   // vacía = sin dato
+      render();
+    });
+    e.addEventListener('blur', () => { e.value = fmt(id, values[id]); });
+    e.addEventListener('keydown', ev => { if (ev.key === 'Enter') e.blur(); });
+  });
+}
+function load(saved) {
+  Object.keys(FIELDS).forEach(id => {
+    values[id] = id in saved ? saved[id] : FIELDS[id].def;
+    if (FIELDS[id].type === 'multi') {
+      const ok = Array.isArray(values[id]) && values[id].length;
+      values[id] = ok ? [...values[id]] : [...FIELDS[id].def];
+    } else if (FIELDS[id].type !== 'sel') el(id).value = fmt(id, values[id]);
+  });
+}
+
+// ---------- Matemática financiera ----------
+// Cuota constante para capital P, interés mensual i, n meses y un pago final B.
+function pmt(P, i, n, B = 0) {
+  if (n <= 0) return 0;
+  if (i === 0) return (P - B) / n;
+  const v = Math.pow(1 + i, -n);
+  return (P - B * v) * i / (1 - v);
+}
+function schedule(P, i, n, B = 0, offset = 0) {
+  const cuota = pmt(P, i, n, B), rows = [];
+  let pend = P;
+  for (let k = 1; k <= n; k++) {
+    const interes = pend * i, capital = cuota - interes;
+    pend -= capital;
+    rows.push({ mes: k + offset, cuota, interes, capital, pend: Math.max(0, pend) });
+  }
+  return { cuota, rows };
+}
+// TAE: tasa que iguala lo que realmente recibes con lo que pagas (pagos[k] en el mes k).
+function tae(recibido, pagos) {
+  if (recibido <= 0) return null;
+  const f = r => pagos.reduce((s, p, k) => s + p / Math.pow(1 + r, k), 0) - recibido;
+  if (f(0) <= 0) return 0;
+  let lo = 0, hi = 1;
+  for (let it = 0; it < 90; it++) { const m = (lo + hi) / 2; if (f(m) > 0) lo = m; else hi = m; }
+  return (Math.pow(1 + lo, 12) - 1) * 100;
+}
+function prestamo(precio, entrada, tin, nMeses, comPct, final = 0) {
+  const n = Math.max(1, Math.round(nMeses));
+  const ent = Math.min(entrada, precio);
+  const P = precio - ent;                          // capital financiado
+  const comision = P * comPct / 100;               // se paga al firmar
+  const B = Math.min(final, P);
+  const { cuota, rows } = schedule(P, tin / 1200, n, B);
+  const pagos = [0, ...rows.map(r => r.cuota)]; pagos[n] += B;
+  return {
+    n, P, B, cuota, rows, comision, precio,
+    inicial: ent + comision,
+    intereses: cuota * n + B - P,
+    tae: tae(P - comision, pagos),
+    tin, modo: 'TIN',
+  };
+}
+// Cuando la oferta solo da la TAE (y quizá la cuota): se deducen el TIN y la comisión.
+//  - Con cuota: el TIN es el tipo que hace que esa cuota devuelva el préstamo, y la comisión
+//    es lo que falta para que, descontando los pagos a la TAE, salga el capital prestado.
+//  - Sin cuota: no se puede separar interés y comisión; se estima con comisión 0.
+function prestamoTAE(precio, entrada, taePct, nMeses, cuotaDada, final = 0) {
+  const n = Math.max(1, Math.round(nMeses));
+  const ent = Math.min(entrada, precio);
+  const P = precio - ent;
+  const B = Math.min(final, P);
+  const r = Math.pow(1 + taePct / 100, 1 / 12) - 1;   // TAE → tipo mensual efectivo
+  let i, comision = 0, aviso = null, estimado = false;
+  if (cuotaDada > 0) {
+    if (cuotaDada * n + B <= P) { i = 0; aviso = 'baja'; }
+    else {
+      let lo = 0, hi = 0.2;
+      for (let it = 0; it < 100; it++) { const m = (lo + hi) / 2; if (pmt(P, m, n, B) < cuotaDada) lo = m; else hi = m; }
+      i = (lo + hi) / 2;
+    }
+    let pv = B / Math.pow(1 + r, n);
+    for (let k = 1; k <= n; k++) pv += cuotaDada / Math.pow(1 + r, k);
+    comision = P - pv;
+    if (comision < -1 && !aviso) aviso = 'tae';
+    comision = Math.max(0, comision);
+  } else {
+    i = r; estimado = true;
+  }
+  const { rows } = schedule(P, i, n, B);
+  const cuota = cuotaDada > 0 ? cuotaDada : rows[0].cuota;
+  const pagos = [0, ...rows.map(() => cuota)]; pagos[n] += B;
+  return {
+    n, P, B, cuota, rows, comision, precio,
+    inicial: ent + comision,
+    intereses: Math.max(0, cuota * n + B - P),
+    tae: tae(P - comision, pagos),
+    tin: i * 1200, modo: 'TAE', estimado, aviso,
+  };
+}
+function calcPrestamo(v, pre, precio, final = 0) {
+  return v[pre + '_modo'] === 'TAE'
+    ? prestamoTAE(precio, v.entrada, v[pre + '_tae'], v[pre + '_n'], v[pre + '_cuota'], final)
+    : prestamo(precio, v.entrada, v[pre + '_tin'], v[pre + '_n'], v[pre + '_com'], final);
+}
+
+// ---------- Cálculo y pintado ----------
+// Nombre de una casilla dentro de una frase: sin la aclaración pequeña y en minúscula (salvo siglas: TIN, TAE).
+const nombreCorto = id => {
+  const s = FIELDS[id].label.replace(/<small>.*?<\/small>/g, '').trim();
+  return /^[A-ZÁÉÍÓÚ]{2}/.test(s) ? s : s[0].toLowerCase() + s.slice(1);
+};
+// Nombre de la opción en medio de una frase («frente a pagar al contado», «menos que el préstamo normal»).
+const nombreEn = o => ({ contado: 'pagar al contado', prestamo: 'el préstamo normal', final: 'la cuota final', banco: 'el préstamo del banco' })[o.key];
+function render() {
+  const raw = values;
+  // Copia para calcular: las casillas vacías cuentan como 0.
+  const v = Object.fromEntries(Object.entries(raw).map(([k, x]) => [k, x == null ? 0 : x]));
+  const refi = v.r_si === 'SÍ';
+  Object.keys(FIELDS).filter(id => FIELDS[id].type === 'sel').forEach(id =>
+    el(id).querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.v === v[id]))));
+  const F = new Set(v.formas);
+  el('formas').querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', String(F.has(b.dataset.v))));
+  ['r_n', 'r_tin', 'r_com'].forEach(id => el('row_' + id).classList.toggle('off', !refi));
+
+  // Mostrar solo los datos de las formas de pago elegidas
+  const hide = (id, h) => el(id).classList.toggle('hide', h);
+  const nPrest = ['prestamo', 'final', 'banco'].filter(k => F.has(k)).length;
+  hide('row_precio', !F.has('contado') && !F.has('banco'));   // el banco paga el precio al contado
+  el('row_precio').querySelector('label').innerHTML = F.has('banco') ? 'Precio al contado <small>· también con préstamo del banco</small>' : 'Precio al contado';
+  hide('row_p_precio', !F.has('prestamo'));
+  hide('row_c_precio', !F.has('final'));
+  hide('row_entrada', nPrest === 0);
+  el('row_entrada').querySelector('label').innerHTML = nPrest > 1 ? 'Entrada <small>· igual en todos los préstamos</small>' : 'Entrada';
+  hide('grp_2', !F.has('prestamo'));
+  hide('grp_B', !F.has('banco'));
+  ['grp_3', 'grp_3.1', 'grp_3.2'].forEach(g => hide(g, !F.has('final')));
+
+  const contado = { key: 'contado', nombre: 'Al contado', total: v.precio, precio: v.precio, intereses: 0, comision: 0, meses: 0 };
+
+  ['p', 'c', 'b'].forEach(pre => {
+    const tae = v[pre + '_modo'] === 'TAE';
+    ['_tin', '_com'].forEach(s => el('row_' + pre + s).classList.toggle('hide', tae));
+    ['_tae', '_cuota'].forEach(s => el('row_' + pre + s).classList.toggle('hide', !tae));
+  });
+
+  // ¿Qué formas de pago tienen ya los datos mínimos? Solo esas se calculan y comparan.
+  const has = id => raw[id] != null;
+  const esTAE = pre => raw[pre + '_modo'] === 'TAE';
+  const REQ = {
+    contado: ['precio'],
+    prestamo: ['p_precio', 'p_n', esTAE('p') ? 'p_tae' : 'p_tin'],
+    banco: ['precio', 'b_n', esTAE('b') ? 'b_tae' : 'b_tin'],
+    final: ['c_precio', 'c_n', esTAE('c') ? 'c_tae' : 'c_tin', 'c_final', ...(refi ? ['r_n', 'r_tin'] : [])],
+  };
+  const nombreCampo = nombreCorto;
+  const faltan = k => REQ[k].filter(id => !has(id)).map(nombreCampo);
+  const R = new Set([...F].filter(k => faltan(k).length === 0));   // elegidas y con datos
+
+  const pn = calcPrestamo(v, 'p', v.p_precio);
+  const normal = { key: 'prestamo', nombre: 'Préstamo normal', ...pn, meses: pn.n, total: pn.inicial + pn.cuota * pn.n };
+
+  // Préstamo del banco: pagas el precio al contado y devuelves el dinero al banco.
+  const pb = calcPrestamo(v, 'b', v.precio);
+  const banco = { key: 'banco', nombre: 'Préstamo del banco', ...pb, meses: pb.n, total: pb.inicial + pb.cuota * pb.n };
+
+  const pc = calcPrestamo(v, 'c', v.c_precio, v.c_final);
+  const final = { key: 'final', nombre: 'Cuota final', ...pc, meses: pc.n, refi: null };
+  if (refi && pc.B > 0) {
+    const nr = Math.max(1, Math.round(v.r_n));
+    const s = schedule(pc.B, v.r_tin / 1200, nr, 0, pc.n);
+    const comR = pc.B * v.r_com / 100;
+    final.refi = { n: nr, cuota: s.cuota, rows: s.rows, comision: comR, intereses: s.cuota * nr - pc.B };
+    final.meses = pc.n + nr;
+    final.intereses += final.refi.intereses;
+    final.comision += comR;
+    final.total = pc.inicial + pc.cuota * pc.n + comR + s.cuota * nr;
+  } else {
+    final.total = pc.inicial + pc.cuota * pc.n + pc.B;
+  }
+  const all = [contado, normal, banco, final].filter(o => R.has(o.key));
+  const vacio = all.length === 0;
+  const varias = all.length > 1;
+  const best = vacio ? null : all.reduce((a, b) => b.total < a.total ? b : a);
+  const others = all.filter(o => o !== best).sort((a, b) => a.total - b.total);
+  const max = Math.max(...all.map(o => o.total), 1);
+
+  // Veredicto
+  el('verdict').style.setProperty('--c', best ? COL[best.key] : 'var(--border)');
+  el('verdict').innerHTML = vacio
+    ? `<div><div class="k">Empieza aquí</div>
+      <div class="v" style="color:var(--text)">Escribe los datos de tu coche</div>
+      <div class="sub" style="color:var(--text-2);margin-top:4px">Rellena las casillas de la izquierda y verás al momento cuánto te cuesta cada forma de pago.</div></div>
+    <div class="chips"><span class="chip">¿Quieres ver cómo funciona? Pulsa <b>«Ver un ejemplo»</b></span></div>`
+    : varias
+    ? `<div><div class="k">La opción más barata</div>
+      <div class="v">${best.nombre} · <span class="num">${eur0(best.total)}</span></div></div>
+    <div class="chips">${others.map(o => `<span class="chip"><b class="num">${eur0(o.total - best.total)}</b> menos que ${nombreEn(o)}</span>`).join('')}</div>`
+    : `<div><div class="k">Única forma de pago elegida</div>
+      <div class="v">${best.nombre} · <span class="num">${eur0(best.total)}</span></div></div>
+    <div class="chips"><span class="chip">Marca otra forma de pago a la izquierda para comparar</span></div>`;
+
+  // Tarjetas
+  const row = (a, b, cls = '') => `<dt>${a}</dt><dd class="${cls}">${b}</dd>`;
+  const isBest = o => varias && o === best;
+  const pendiente = o => `<div class="panel card pend" style="--c:${COL[o.key]}">
+      <div class="top"><span class="ico">${ICON[o.key]}</span><h3>${o.nombre}</h3></div>
+      <div class="lbl">Faltan datos</div>
+      <div class="sub" style="margin-top:6px">Escribe a la izquierda: <b>${faltan(o.key).join(', ')}</b>.</div></div>`;
+  const card = (o, rows, desc) => !F.has(o.key) ? '' : !R.has(o.key) ? pendiente(o) : `<div class="panel card${isBest(o) ? ' best' : ''}" style="--c:${COL[o.key]}">
+      <div class="top"><span class="ico">${ICON[o.key]}</span><h3>${o.nombre}</h3>${isBest(o) ? '<span class="badge">Más barata</span>' : ''}</div>
+      <div class="lbl">Total para quedarte el coche</div>
+      <div class="total num">${eur0(o.total)}</div>
+      <div class="sub">${o.meses ? o.meses + ' meses de pagos' : 'Un único pago'}${o.estimado ? ' · <b>estimación</b>' : ''}</div>
+      <div class="meter"><i style="width:${o.total / max * 100}%"></i></div>
+      <dl>${rows}</dl><div class="spacer"></div><div class="desc">${desc}</div></div>`;
+
+  let descFinal;
+  if (final.B <= 0) descFinal = `Durante ${final.n} meses. Después, sin deuda.`;
+  else if (final.refi) descFinal = `Al terminar refinancias <b>${eur2(final.B)}</b> en ${final.refi.n} cuotas de <b>${eur2(final.refi.cuota)}</b> (meses ${final.n + 1} a ${final.meses}).`;
+  else descFinal = `Al terminar: <b>${eur2(final.B)}</b> adicionales en el mes ${final.n}.`;
+
+  el('cards').innerHTML =
+    card(contado,
+      row('Para empezar', eur2(contado.total)) + row('Mensualidad', 'Ninguna', 'hi') +
+      row('Coste de financiarte', eur2(0)) + row('TAE', '—'),
+      'Un solo pago y sin deuda.') +
+    card(normal,
+      row('Para empezar', eur2(normal.inicial)) + row('Mensualidad', eur2(normal.cuota), 'hi') +
+      row('Coste de financiarte', eur2(normal.intereses + normal.comision)) + row('TAE', normal.tae == null ? '—' : pct(normal.tae)),
+      `Durante ${normal.n} meses. Después, sin deuda.`) +
+    card(banco,
+      row('Para empezar', eur2(banco.inicial)) + row('Mensualidad', eur2(banco.cuota), 'hi') +
+      row('Coste de financiarte', eur2(banco.intereses + banco.comision)) + row('TAE', banco.tae == null ? '—' : pct(banco.tae)),
+      `Pagas ${eur2(v.precio)} al contado con el dinero del banco y se lo devuelves en ${banco.n} meses.`) +
+    card(final,
+      row('Para empezar', eur2(final.inicial)) + row('Mensualidad inicial', eur2(final.cuota), 'hi') +
+      (final.B > 0 ? row('Pago final', eur2(final.B)) : '') +
+      row('Coste de financiarte', eur2(final.intereses + final.comision)) + row('TAE', final.tae == null ? '—' : pct(final.tae)),
+      descFinal);
+  el('cards').style.setProperty('--n', F.size === 4 ? 2 : F.size);   // 4 opciones → cuadrícula 2 × 2
+  ['sec-chart', 'sec-desglose'].forEach(id => el(id).hidden = vacio);
+  if (vacio) {
+    el('notes').hidden = true; el('sec-tables').hidden = true;
+    renderQuick();
+    return;
+  }
+
+  // Notas
+  const note = (icon, c, html) => `<div class="note" style="--c:${c}">${ICON[icon]}<div>${html}</div></div>`;
+  let notes = varias ? note('check', COL[best.key], `<b>${best.nombre}</b> es la opción que menos dinero te cuesta en total.`) : '';
+  // Concesionario frente a banco: rebaja por financiar con el concesionario contra el coste de cada préstamo.
+  if (R.has('prestamo') && R.has('banco')) {
+    const rebaja = v.precio - v.p_precio;
+    const cN = normal.intereses + normal.comision, cB = banco.intereses + banco.comision;
+    const gana = banco.total < normal.total ? banco : normal, dif = Math.abs(banco.total - normal.total);
+    notes += note('check', COL[gana.key], `<b>Concesionario o banco:</b> `
+      + (rebaja > 0 ? `financiando con el concesionario el coche te cuesta <b>${eur2(rebaja)}</b> menos (${eur2(v.p_precio)} en vez de ${eur2(v.precio)}), ` : `el concesionario no te rebaja el precio por financiar con ellos, `)
+      + `pero su préstamo te cuesta <b>${eur2(cN)}</b> en intereses y comisiones, y el del banco <b>${eur2(cB)}</b>. `
+      + `En total, <b style="color:${COL[gana.key]}">${nombreEn(gana)}</b> sale <b>${eur2(dif)}</b> más barato.`);
+  }
+  [normal, banco, final].filter(o => R.has(o.key) && o.modo === 'TAE').forEach(o => {
+    const quien = `<b>${o.nombre} (solo TAE):</b> `;
+    if (o.estimado) {
+      notes += note('info', COL[o.key], quien + `solo con la TAE no se puede separar el interés de la comisión, así que se calcula como si no hubiera comisión (TIN equivalente ${pct(o.tin)}). Es una <b>estimación</b>: escribe también la cuota mensual para un cálculo exacto.`);
+    } else if (o.aviso === 'baja') {
+      notes += note('info', 'var(--final)', quien + `con una cuota de ${eur2(o.cuota)} en ${o.n} meses no se llega a devolver el préstamo. Revisa la cuota, el plazo y el pago final.`);
+    } else if (o.aviso === 'tae') {
+      notes += note('info', 'var(--final)', quien + `la cuota y la TAE no cuadran entre sí (con esa cuota, la TAE debería ser menor). Revisa los datos de la oferta. Los totales sí son correctos, porque salen de la cuota.`);
+    } else {
+      notes += note('info', COL[o.key], quien + `con una TAE de ${pct(v[PREF[o.key] + '_tae'])} y una cuota de ${eur2(o.cuota)}, se deduce un <b>TIN de ${pct(o.tin)}</b> y unos <b>${eur2(o.comision)}</b> de comisión u otros gastos al firmar.`);
+    }
+  });
+  if (R.has('final') && v.c_final > final.P + 0.005) {
+    notes += note('info', 'var(--final)', `<b>Revisa el pago final:</b> has puesto ${eur2(v.c_final)}, pero solo financias ${eur2(final.P)} (precio menos entrada). Se ha calculado con ${eur2(final.B)}.`);
+  }
+  if (R.has('final') && final.B > 0) {
+    notes += final.refi
+      ? note('info', COL.final, `<b>Refinanciando:</b> el pago final de ${eur2(final.B)} se convierte en ${final.refi.n} cuotas de ${eur2(final.refi.cuota)}; la refinanciación te cuesta ${eur2(final.refi.intereses + final.refi.comision)} más.`)
+      : note('info', COL.final, `<b>Sin refinanciar:</b> los ${eur2(final.B)} del pago final salen de tus ahorros en el mes ${final.n}.`);
+  }
+  if (R.has('final') && final.B > 0 && v.v_mercado > 0) {
+    const dif = v.v_mercado - final.B;
+    let txt;
+    if (dif < 0) {
+      txt = `<b>Valor del coche:</b> tu estimación (${eur2(v.v_mercado)}) es inferior al pago final en <b>${eur2(-dif)}</b>. `
+        + (v.v_liquida === 'SÍ'
+          ? 'Si el contrato te deja devolverlo para liquidar el saldo, devolverlo te evita pagar esa diferencia. Comprueba las condiciones y posibles cargos (kilómetros, daños) antes de devolverlo.'
+          : 'Como devolverlo no liquida el saldo, tendrías que cubrir esa diferencia tú. Comprueba las condiciones del contrato.');
+    } else {
+      txt = `<b>Valor del coche:</b> tu estimación (${eur2(v.v_mercado)}) supera el pago final en <b>${eur2(dif)}</b>. Si lo devuelves, pierdes ese valor; quedártelo, o venderlo y liquidar el saldo, te deja ese margen.`;
+    }
+    notes += note('info', COL.final, txt);
+  }
+  const vs = (a, b) => { if (R.has(a.key) && R.has(b.key)) notes += note('info', 'var(--muted)', `${a.nombre} frente a ${nombreEn(b)}: <b class="num">${signed(a.total - b.total)}</b> en total.`); };
+  vs(final, normal);
+  vs(normal, contado);
+  if (!R.has('prestamo')) { vs(banco, contado); vs(final, contado); }
+  el('notes').innerHTML = notes;
+  el('notes').hidden = !notes;
+
+  drawChart(all);
+  drawDesglose(all);
+  drawTables(normal, final, R, banco);
+  renderQuick();
+}
+
+// ---------- Calculadora rápida: cuota + plazo + TAE → cuánto pagarás al final ----------
+function duracion(n) {
+  const a = Math.floor(n / 12), m = n % 12;
+  const ta = a ? `${a} año${a > 1 ? 's' : ''}` : '', tm = m ? `${m} mes${m > 1 ? 'es' : ''}` : '';
+  return [ta, tm].filter(Boolean).join(' y ');
+}
+// Formas de pago elegidas, asegurando que el préstamo normal esté entre ellas.
+const conPrestamo = () => FORMAS.map(f => f[0]).filter(k => k === 'prestamo' || values.formas.includes(k));
+function renderQuick() {
+  const v = values;
+  const c = v.q_cuota || 0, n = Math.max(1, Math.round(v.q_n || 0)), ent = v.q_entrada || 0;
+  const modoTIN = v.q_modo === 'TIN';
+  el('row_q_tin').classList.toggle('hide', !modoTIN);
+  el('row_q_com').classList.toggle('hide', !modoTIN);
+  el('row_q_tae').classList.toggle('hide', modoTIN);
+
+  // Sin los datos mínimos, en vez de ceros se explica qué escribir.
+  const faltanQ = ['q_cuota', 'q_n', ...(modoTIN ? ['q_tin'] : [])].filter(id => v[id] == null)
+    .map(nombreCorto);
+  if (faltanQ.length) {
+    el('qresult').innerHTML = `<div class="panel q-total" style="border-left-color:var(--border)">
+      <div class="k">Empieza aquí</div>
+      <div class="v" style="font-size:26px;color:var(--text)">Escribe lo que te ha dicho el comercial</div>
+      <div class="s">Falta: <b>${faltanQ.join(', ')}</b>. Con eso te digo cuánto pagarás al final.
+        ¿Quieres ver cómo funciona? Pulsa <b>«Ver un ejemplo»</b>.</div></div>`;
+    return;
+  }
+  const taeV = modoTIN ? null : v.q_tae, precio = v.q_precio;
+  const pagos = c * n;
+
+  let pv = null, com = null, tin = null, P = null, aviso = null, taeShow = taeV;
+  if (modoTIN) {
+    // Con TIN: lo que te prestan es el valor actual de las cuotas al TIN; la comisión es un % de eso.
+    tin = v.q_tin || 0;
+    const i = tin / 1200;
+    P = i > 0 ? c * (1 - Math.pow(1 + i, -n)) / i : pagos;
+    if (v.q_com != null) com = P * v.q_com / 100;
+    taeShow = tae(P - (com || 0), [0, ...Array(n).fill(c)]);
+    if (precio != null && Math.abs(precio - ent - P) > Math.max(50, P * 0.01)) aviso = 'tinprecio';
+  } else if (taeV != null) {
+    // Con TAE: lo que te prestan de verdad (descontando la comisión) es el valor actual de las cuotas a la TAE.
+    const r = Math.pow(1 + taeV / 100, 1 / 12) - 1;
+    pv = 0; for (let k = 1; k <= n; k++) pv += c / Math.pow(1 + r, k);
+  }
+  if (!modoTIN && precio != null) {
+    P = precio - ent;
+    if (P <= 0) aviso = 'precio';
+    else {
+      if (pv != null) { com = P - pv; if (com < -1) aviso = 'nocuadra'; com = Math.max(0, com); }
+      if (pagos > P) {
+        let lo = 0, hi = 0.2;
+        for (let it = 0; it < 100; it++) { const m = (lo + hi) / 2; if (pmt(P, m, n) < c) lo = m; else hi = m; }
+        tin = (lo + hi) / 2 * 1200;
+      } else aviso = aviso || 'baja';
+    }
+  }
+  const total = ent + (com || 0) + pagos;
+  const coste = modoTIN ? pagos - P + (com || 0)
+    : precio != null ? total - precio : (pv != null ? pagos - pv : null);
+
+  // Barra de composición
+  const parts = [[ent, 'var(--brand-2)', 'Entrada'], [com || 0, 'var(--comision)', 'Comisión y gastos al firmar'], [pagos, 'var(--prestamo)', 'Cuotas']].filter(p => p[0] > 0);
+  const stack = parts.map(([val, col, name]) => `<i style="width:${val / total * 100}%;background:${col}" title="${name}: ${eur2(val)}"></i>`).join('');
+  const legend = parts.map(([val, col, name]) => `<span><i style="background:${col}"></i>${name} · ${eur0(val)}</span>`).join('');
+
+  const unk = t => `<span class="unk">${t}</span>`;
+  const row = (a, b, cls = '') => `<dt class="${cls}">${a}</dt><dd class="${cls}">${b}</dd>`;
+  const comTxt = com != null ? eur2(com)
+    : modoTIN ? unk('no te la han dicho')
+    : taeV == null ? unk('sin la TAE no se sabe') : precio == null ? unk('falta el precio') : eur2(0);
+
+  let costeBox;
+  if (coste != null) {
+    costeBox = `<div class="big num">${eur2(coste)}</div>
+      <div class="bs">${precio > 0 ? `${n2.format(coste / precio * 100)} % más que el precio del coche`
+        : modoTIN ? 'intereses y comisión de apertura' : 'intereses y comisiones, según la TAE'}</div>
+      <dl>
+        ${precio != null ? row('Precio del coche', eur2(precio)) : ''}
+        ${row('Dinero que te prestan', P != null && P > 0 ? eur2(P) : pv != null ? eur2(pv) + ' aprox.' : unk('—'))}
+        ${row(modoTIN ? 'TIN' : 'TIN deducido', tin != null ? pct(tin) : unk(precio == null ? 'falta el precio' : '—'))}
+        ${row(modoTIN ? 'TAE calculada' : 'TAE', taeShow != null ? pct(taeShow) : unk('no la sabes'))}
+        ${row('Coste por mes', eur2(coste / n))}
+      </dl>`;
+  } else {
+    costeBox = `<div class="bs">Para saber cuánto pagas de más necesito la <b>TAE</b> o el <b>precio del coche</b>.</div>`;
+  }
+
+  const note = (icon, col, html) => `<div class="note" style="--c:${col}">${ICON[icon]}<div>${html}</div></div>`;
+  let notes = '';
+  if (aviso === 'precio') notes += note('info', 'var(--final)', 'La entrada es igual o mayor que el precio: no hay nada que financiar. Revisa los datos.');
+  if (aviso === 'baja') notes += note('info', 'var(--final)', `Con ${n} cuotas de ${eur2(c)} no se llega a pagar el precio del coche. Revisa la cuota, el plazo o el precio: quizá es un préstamo con <b>cuota final</b> (usa la pestaña «Comparar formas de pago»).`);
+  if (aviso === 'nocuadra') notes += note('info', 'var(--final)', 'La cuota y la TAE no cuadran con ese precio. Puede que el precio del anuncio no sea el que se financia (descuentos, extras o seguros incluidos). Pide la oferta por escrito.');
+  if (aviso === 'tinprecio') notes += note('info', 'var(--final)', `Con esa cuota y ese TIN te prestan <b>${eur2(P)}</b>, pero el precio menos la entrada son <b>${eur2(precio - ent)}</b>. Revisa los datos: puede que haya seguros o gastos financiados dentro de la cuota.`);
+  if (modoTIN && v.q_com == null) notes += note('info', 'var(--final)', 'No has puesto la <b>comisión de apertura</b>: si la hay, el total será mayor. Pregunta por ella o por la TAE.');
+  if (modoTIN && com != null && com > 0.5) notes += note('info', 'var(--muted)', `La comisión de apertura (${pct(v.q_com)} de lo que te prestan) son <b>${eur2(com)}</b> que pagas al firmar. Ya están sumados en el total. Con ella, la TAE real es <b>${pct(taeShow)}</b>.`);
+  if (!modoTIN && taeV == null) notes += note('info', 'var(--final)', 'Sin la <b>TAE</b> no se puede saber si hay comisión de apertura u otros gastos al firmar: el total real podría ser mayor. Pídela: es obligatoria en la publicidad del préstamo.');
+  if (precio == null && !modoTIN) notes += note('info', 'var(--muted)', 'Añade el <b>precio del coche</b> para saber cuánto pagas de más por financiarlo, el TIN y la comisión que hay detrás.'
+    + (taeV != null ? ' Sin el precio, el total no incluye la comisión de apertura que pagarías al firmar (el «pagas de más» sí la tiene en cuenta, gracias a la TAE).' : ''));
+  if (!modoTIN && com != null && com > 0.5) notes += note('info', 'var(--muted)', `Con esa TAE y ese precio, se deduce que pagas unos <b>${eur2(com)}</b> de comisión de apertura u otros gastos al firmar. Ya están sumados en el total.`);
+  notes += note('check', 'var(--contado)', 'En la letra pequeña del anuncio o de la oferta busca el <b>«importe total adeudado»</b> o <b>«precio total a plazos»</b>: debería coincidir con este total.');
+
+  const canGo = modoTIN ? P > 0 : taeV != null && precio != null && !aviso;
+  el('qresult').innerHTML = `
+    <div class="panel q-total">
+      <div class="k">Al final pagarás</div>
+      <div class="v num">${eur2(total)}</div>
+      <div class="s">${n} cuotas de ${eur2(c)} · ${duracion(n)}${ent ? ` · más ${eur2(ent)} de entrada` : ''}</div>
+      <div class="stack">${stack}</div>
+      <div class="legend" style="justify-content:flex-start">${legend}</div>
+    </div>
+    <div class="q-grid">
+      <div class="panel q-box"><h3>De dónde sale el total</h3><dl>
+        ${row('Entrada', ent ? eur2(ent) : eur2(0))}
+        ${row('Comisión y gastos al firmar', comTxt)}
+        ${row(`Cuotas <small class="unk">(${n} × ${eur2(c)})</small>`, eur2(pagos))}
+        ${row('Total', eur2(total), 't')}
+      </dl></div>
+      <div class="panel q-box"><h3>¿Cuánto pagas de más por financiar?</h3>${costeBox}
+        ${canGo ? '<button class="go" id="qgo" type="button">Llevar a la comparativa (préstamo normal)</button>' : ''}</div>
+    </div>
+    <div class="panel notes">${notes}</div>
+    <p class="foot">Cálculo para un préstamo normal (cuota fija, sin cuota final). ${modoTIN
+      ? 'Lo que te prestan se calcula con la cuota, el plazo y el TIN; la comisión es un porcentaje de eso y se paga al firmar.'
+      : 'La comisión se deduce de la TAE y el precio, suponiendo que se paga al firmar.'}
+      No incluye seguros ni otros productos vinculados que no entren en la TAE.</p>`;
+
+  if (canGo) el('qgo').addEventListener('click', () => {
+    load(modoTIN
+      ? { ...values, formas: conPrestamo(), p_modo: 'TIN', p_tin: tin, p_com: v.q_com || 0, p_n: n, p_precio: aviso || precio == null ? ent + P : precio, entrada: ent }
+      : { ...values, formas: conPrestamo(), p_modo: 'TAE', p_tae: taeV, p_cuota: c, p_n: n, p_precio: precio, entrada: ent });
+    setTab('comparar'); render(); window.scrollTo({ top: 0, behavior: 'smooth' });
+  });
+}
+
+// ---------- Pestañas ----------
+function setTab(t) {
+  document.querySelectorAll('.tabs button').forEach(b => b.setAttribute('aria-selected', String(b.dataset.tab === t)));
+  el('view-comparar').hidden = t !== 'comparar';
+  el('view-rapida').hidden = t !== 'rapida';
+  try { history.replaceState(null, '', t === 'rapida' ? '#rapida' : '#'); } catch (e) { /* p. ej. vista previa */ }
+}
+document.querySelectorAll('.tabs button').forEach(b => b.addEventListener('click', () => setTab(b.dataset.tab)));
+
+function drawDesglose(all) {
+  const intPrimero = o => o.refi ? o.intereses - o.refi.intereses : o.intereses;
+  const comPrimero = o => o.refi ? o.comision - o.refi.comision : o.comision;
+  const c = (o, val) => o.key === 'contado' ? '—' : eur2(val);
+  const rows = [
+    ['Precio del coche', o => eur2(o.precio)],
+    ['Capital prestado', o => c(o, o.P)],
+    ['Intereses del primer préstamo', o => c(o, intPrimero(o))],
+    ['Comisión inicial', o => c(o, comPrimero(o))],
+    ['Intereses de la refinanciación', o => c(o, o.refi ? o.refi.intereses : 0)],
+    ['Comisión de la refinanciación', o => c(o, o.refi ? o.refi.comision : 0)],
+    ['Coste del crédito <small>· intereses y comisiones</small>', o => eur2(o.intereses + o.comision), 'sum'],
+    ['Desembolso total <small>· precio + coste del crédito</small>', o => eur2(o.total), 'tot'],
+    ['Capital devuelto en las mensualidades iniciales', o => c(o, o.P - (o.B || 0)), 'gap'],
+    ['Saldo antes del pago final', o => c(o, o.B || 0)],
+  ];
+  el('desglose').innerHTML = `<div class="tw" style="max-height:none;border:1px solid var(--border);border-radius:12px"><table class="dg">
+    <thead><tr><th>Concepto</th>${all.map(o => `<th style="color:${COL[o.key]}">${o.nombre}</th>`).join('')}</tr></thead>
+    <tbody>${rows.map(([label, fn, cls = '']) => `<tr class="${cls}"><td>${label}</td>${all.map(o => `<td>${fn(o)}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`;
+}
+
+function drawChart(all) {
+  const W = 760, H = 320, m = { l: 74, r: 12, t: 30, b: 34 };
+  const max = Math.max(...all.map(o => o.total), 1);
+  // Escala «redonda» (1, 2, 2,5 o 5 × potencia de 10) con unas 4–7 líneas, para cualquier importe.
+  const raw = Math.max(max / 6, 1000), mag = Math.pow(10, Math.floor(Math.log10(raw)));
+  const step = [1, 2, 2.5, 5, 10].map(f => f * mag).find(s => s >= raw);
+  const top = Math.ceil(max / step) * step;
+  const y = val => H - m.b - val / top * (H - m.t - m.b);
+  const slot = (W - m.l - m.r) / all.length, bw = Math.min(120, slot * 0.46);
+  let s = `<svg class="chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="Desembolso total por opción">`;
+  for (let t = 0; t <= top; t += step) {
+    s += `<line x1="${m.l}" x2="${W - m.r}" y1="${y(t)}" y2="${y(t)}" stroke="var(--border)"/>
+      <text x="${m.l - 10}" y="${y(t) + 4}" text-anchor="end">${eur0(t)}</text>`;
+  }
+  all.forEach((o, k) => {
+    const x = m.l + slot * k + (slot - bw) / 2;
+    const segs = [[o.precio, 'var(--precio)', 'Precio del coche'], [o.intereses, 'var(--interes)', 'Intereses'], [o.comision, 'var(--comision)', 'Comisiones']].filter(sg => sg[0] > 0);
+    let acc = 0;
+    segs.forEach(([val, c, name], j) => {
+      const h = y(acc) - y(acc + val), isTop = j === segs.length - 1;
+      const r = isTop ? Math.min(6, h) : 0;
+      const yt = y(acc + val);
+      // esquinas superiores redondeadas solo en el último tramo
+      s += `<path d="M${x},${yt + h} V${yt + r} Q${x},${yt} ${x + r},${yt} H${x + bw - r} Q${x + bw},${yt} ${x + bw},${yt + r} V${yt + h} Z" fill="${c}"><title>${o.nombre} · ${name}: ${eur2(val)}</title></path>`;
+      acc += val;
+    });
+    s += `<text class="tot" x="${x + bw / 2}" y="${y(o.total) - 9}" text-anchor="middle">${eur0(o.total)}</text>
+      <text class="name" x="${x + bw / 2}" y="${H - 10}" text-anchor="middle">${o.nombre}</text>`;
+  });
+  s += `</svg><div class="legend"><span><i style="background:var(--precio)"></i>Precio del coche</span><span><i style="background:var(--interes)"></i>Intereses</span><span><i style="background:var(--comision)"></i>Comisiones</span></div>`;
+  el('chart').innerHTML = s;
+}
+
+function drawTables(normal, final, F, banco) {
+  el('sec-tables').hidden = !F.has('prestamo') && !F.has('final') && !F.has('banco');
+  const tr = r => `<tr><td>${r.mes}</td><td>${eur2(r.cuota)}</td><td>${eur2(r.interes)}</td><td>${eur2(r.capital)}</td><td>${eur2(r.pend)}</td></tr>`;
+  const head = `<thead><tr><th>Mes</th><th>Cuota</th><th>Intereses</th><th>Capital</th><th>Pendiente</th></tr></thead>`;
+  const t = (o, extra = '') => `<details style="--c:${COL[o.key]}"><summary><span class="dot"></span>${o.nombre}<span class="s2">· financias ${eur2(o.P)}</span></summary>
+    <div class="tw"><table>${head}<tbody>${o.rows.map(tr).join('')}${extra}</tbody></table></div></details>`;
+  let extra = '';
+  if (final.B > 0) {
+    extra = `<tr class="hl"><td>${final.n} · pago final</td><td>${final.refi ? 'Refinanciado' : eur2(final.B)}</td><td>—</td><td>${eur2(final.B)}</td><td>${eur2(0)}</td></tr>`;
+    if (final.refi) extra += final.refi.rows.map(tr).join('');
+  }
+  el('tables').innerHTML = (F.has('prestamo') ? t(normal) : '') + (F.has('banco') ? t(banco) : '') + (F.has('final') ? t(final, extra) : '');
+}
+
+buildInputs();
+// Cada vez que se abre, empieza en blanco: no se guarda nada entre usos.
+try { localStorage.removeItem(STORE); } catch (e) { /* borra lo que guardaban versiones anteriores */ }
+load({});
+
+// App instalable: guarda los archivos en el móvil para usarla sin conexión (solo cuando se sirve por https).
+if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol)) {
+  navigator.serviceWorker.register('sw.js').catch(() => { /* sin instalación: la calculadora funciona igual */ });
+}
+setTab(location.hash === '#rapida' ? 'rapida' : 'comparar');
+render();
+</script>
+</body>
+</html>
